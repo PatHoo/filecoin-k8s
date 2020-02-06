@@ -1,0 +1,85 @@
+# Harbor K8S
+helm uninstall hkc
+kubectl get pod -o wide | grep harbor
+kubectl delete pvc data-hkc-harbor-redis-0
+kubectl delete pvc database-data-hkc-harbor-database-0
+kubectl delete pvc hkc-harbor-chartmuseum
+kubectl delete pvc hkc-harbor-jobservice
+kubectl delete pvc hkc-harbor-registry
+kubectl get pvc | grep harbor
+
+helm install hkc --set externalDomain=harbor.hkc.org  .
+kubectl get pod,svc,ingress -o wide | grep harbor
+kubectl get secret/hkc-harbor-ingress -o jsonpath="{.data.ca\.crt}" | base64 --decode
+mkdir -p /etc/docker/certs.d/harbor.hkc.org/
+#cat <<EOF > /etc/docker/certs.d/harbor.hkc.org/ca.crt
+systemctl daemon-reload
+systemctl restart docker
+
+docker login harbor.hkc.org
+kubectl create secret docker-registry harbor-secret --docker-server=harbor.hkc.org --docker-username=admin --docker-password=Harbor12345
+kubectl get secret
+
+
+
+# Harbor Docker Compose
+curl -L https://github.com/docker/compose/releases/download/1.25.3/docker-compose-`uname -s`-`uname -m` -o /usr/local/bin/docker-compose
+chmod +x /usr/local/bin/docker-compose
+
+wget http://harbor.orientsoft.cn/harbor-v1.5.0/harbor-offline-installer-v1.5.0.tgz
+tar zxvf harbor-offline-installer-v1.5.0.tgz
+cd harbor
+sed -i 's/^hostname.*/hostname = 116.31.96.131/g' harbor.cfg
+./install.sh
+
+
+
+# Build Images
+cd lotus
+git pull origin master
+docker build -t lotus:hkc --network host  .
+docker run --rm lotus:hkc lotus --version
+cd ../filecoin
+docker build -t filecoin  .
+docker tag filecoin 116.31.96.131/library/filecoin:latest
+docker push 116.31.96.131/library/filecoin:latest
+docker pull 116.31.96.131/library/filecoin:latest
+
+mkdir -p /home/file/go-fil/{tmp,lotus,lotusstorage}
+kubectl apply -f filecoin.yaml
+
+watch du -sh /home/file/go-fil/lotus/datastore/*.vlog
+
+kubectl get pod -o wide -w|grep filecoin
+kubectl get pod -o wide|grep filecoin|awk '{printf "%-20s%s\n",$1,$7}'
+
+kubectl attach pod filecoin-27hp2 -c lotus-storage-miner
+kubectl exec -it filecoin-27hp2 -c lotus-storage-miner -- /bin/bash
+kubectl exec -it filecoin-27hp2 -c lotus-storage-miner -- watch lotus sync status
+
+kubectl delete pod POD_NAME --grace-period=0 --force
+kubectl get pod POD_NAME -o yaml | kubectl replace --force -f -
+
+for pod in $(kubectl get pod -o wide|grep filecoin|awk '{print $1}')
+do
+  echo $pod
+  kubectl exec -it $pod -c lotus-storage-miner -- lotus sync status|grep -A 6 0:|grep -E "Stage:|Height:"
+  echo "======================================================================"
+done
+
+for pod in $(kubectl get pod -o wide|grep filecoin|awk '{print $1}')
+do
+  echo $pod
+  kubectl exec -it $pod -c lotus-storage-miner -- lotus sync status|grep -E "Stage:"
+  echo "======================================================================"
+done
+
+
+
+# Lotus
+lotus net peers
+lotus wallet new bls
+lotus wallet list
+lotus-storage-miner init --actor=ACTOR_VALUE_RECEIVED --owner=OWNER_VALUE_RECEIVED
+lotus-storage-miner run
+

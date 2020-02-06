@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: filecoin
+spec:
+  selector:
+    matchLabels:
+      app: filecoin
+  template:
+    metadata:
+      name: filecoin-app
+      labels:
+        app: filecoin
+    spec:
+      volumes:
+      - name: data
+        hostPath:
+          path: /home/file/go-fil
+      - name: paramcache
+        hostPath:
+          path: /var/tmp/filecoin-proof-parameters
+      containers:
+      - name: filecoin
+        image: 116.31.96.131/library/filecoin:latest
+        imagePullPolicy: Always
+        command: ["lotus"]
+        args: ["daemon"]
+        env:
+          - name: LOTUS_PATH
+            value: /home/file/go-fil/lotus
+          - name: FULLNODE_LISTEN_ADDR
+            value: /ip4/0.0.0.0/tcp/1234/http
+          - name: PROXY_FETCHER_ADDR
+            value: ""
+          - name: IPFS_GATEWAY
+            value: https://proof-parameters.s3.cn-south-1.jdcloud-oss.com/ipfs/  
+          - name: TMPDIR
+            value: /home/file/go-fil/tmp 
+          - name: FIL_PROOFS_PARAMETER_CACHE
+            value: /var/tmp/filecoin-proof-parameters  
+        volumeMounts:
+          - name: data
+            mountPath: /home/file/go-fil
+          - name: paramcache
+            mountPath: /var/tmp/filecoin-proof-parameters
+      - name: lotus-storage-miner
+        image: 116.31.96.131/library/filecoin:latest
+        imagePullPolicy: Always
+        command: ["sh", "-c", "trap : TERM INT; (while true; do sleep 30; if lotus net peers|wc -l >0; then lotus sync wait; fi; done) & wait"]
+        env:
+          - name: LOTUS_PATH
+            value: /home/file/go-fil/lotus
+          - name: LOTUS_STORAGE_PATH
+            value: /home/file/go-fil/lotusstorage
+          - name: FULLNODE_LISTEN_ADDR
+            value: /ip4/0.0.0.0/tcp/1234/http
+          - name: IPFS_GATEWAY
+            value: https://proof-parameters.s3.cn-south-1.jdcloud-oss.com/ipfs/
+          - name: TMPDIR
+            value: /home/file/go-fil/tmp  
+          - name: FIL_PROOFS_PARAMETER_CACHE
+            value: /var/tmp/filecoin-proof-parameters  
+        volumeMounts:
+        - name: data
+          mountPath: /home/file/go-fil
+        - name: paramcache
+          mountPath: /var/tmp/filecoin-proof-parameters
+

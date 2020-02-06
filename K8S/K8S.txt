@@ -1,0 +1,16 @@
+wget https://github.com/fanux/sealos/releases/download/v3.0.1/sealos && chmod +x sealos && sudo mv sealos /usr/bin
+wget -c https://sealyun.oss-cn-beijing.aliyuncs.com/413bd3624b2fb9e466601594b4f72072-1.17.0/kube1.17.0.tar.gz
+
+sealos init --passwd 123 --master 9.110.187.127 --pkg-url ./kube1.17.0.tar.gz --version v1.17.0
+
+
+
+
+
+kubectl describe node rc01-k8s-mstr001
+kubectl taint nodes rc01-k8s-mstr001 node-role.kubernetes.io/master-
+
+kubectl taint nodes rc01-k8s-mstr001 node-role.kubernetes.io/master=true:NoSchedule
+kubectl taint nodes rc02-k8s-mstr002 node-role.kubernetes.io/master=true:NoSchedule
+kubectl taint nodes rc03-k8s-mstr003 node-role.kubernetes.io/master=true:NoSchedule
+

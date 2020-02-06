@@ -1,0 +1,79 @@
+
+sudo sed -i 's/archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list
+sudo dpkg -P snapd
+sudo apt-get update
+sudo apt-get install -y vim git curl wget tree zfsutils iproute2 net-tools ethtool ipvsadm
+sudo hostnamectl set-hostname Lotus
+sudo timedatectl set-timezone Asia/Shanghai
+
+# SSH
+ssh-keygen -t rsa -P '' -f ~/.ssh/id_rsa
+
+# Google Chrome
+sudo wget https://repo.fdzh.org/chrome/google-chrome.list -P /etc/apt/sources.list.d/
+wget -q -O - https://dl.google.com/linux/linux_signing_key.pub  | sudo apt-key add -
+sudo apt-get update
+sudo apt-get install -y google-chrome-stable
+
+# Google Pinyin
+sudo apt-get install -y fcitx
+im-config
+sudo apt-get install -y fcitx-googlepinyin
+fcitx-config-gtk3
+
+# SublimeText
+wget -qO - https://download.sublimetext.com/sublimehq-pub.gpg | sudo apt-key add -
+sudo apt-get install apt-transport-https
+echo "deb https://download.sublimetext.com/ apt/stable/" | sudo tee /etc/apt/sources.list.d/sublime-text.list
+sudo apt-get update
+sudo apt-get install -y sublime-text
+
+# Golang
+wget -c https://dl.google.com/go/go1.13.7.linux-amd64.tar.gz
+sudo tar -zxvf go1.13.7.linux-amd64.tar.gz -C /usr/local
+echo "export PATH=$PATH:/usr/local/go/bin" >> ~/.bashrc
+source ~/.bashrc
+go version
+
+# K8S
+echo $GOPATH
+mkdir -p $GOPATH/src/k8s.io
+cd $GOPATH/src/k8s.io
+git clone https://github.com/kubernetes/kubernetes -b release-1.17
+#git clone https://github.com/kubernetes/kubernetes && cd kubernetes
+#git checkout -b 1.17 tags/v1.17.0
+cd $GOPATH/src/k8s.io/kubernetes
+#KUBE_BUILD_PLATFORMS=linux/amd64 make all WHAT=cmd/kubelet GOFLAGS=-v GOGCFLAGS="-N -l"
+KUBE_BUILD_PLATFORMS=linux/amd64 make all GOFLAGS=-v GOGCFLAGS="-N -l"
+
+# ZFS
+zpool create Lotus /dev/sdb /dev/sdc
+zpool status
+zpool list
+zfs create -o quota=100G Lotus/data
+zfs list
+df -h|grep Lotus
+
+# Docker
+sudo apt-get remove docker docker-engine docker.io containerd runc
+sudo apt-get update
+sudo apt-get install -y curl apt-transport-https ca-certificates gnupg-agent  software-properties-common
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
+sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+sudo apt-get update
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io
+sudo gpasswd -a $USER docker
+newgrp docker
+docker version
+
+cat > /etc/docker/daemon.json <<EOF
+{
+  "registry-mirrors": ["https://registry.docker-cn.com"],
+  "insecure-registries": ["116.31.96.131"],
+  "graph":"/Lotus/data"
+}
+EOF
+
+sudo systemctl restart docker
+docker run hello-world
+
