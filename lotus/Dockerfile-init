@@ -1,0 +1,39 @@
+FROM ubuntu:18.04
+LABEL maintainer="PatHoo <QuInfoTP@gmail.com>"  description="Use single-stage builds"
+
+# 1. Create user
+RUN useradd -ms /bin/bash lotus
+
+# 2. Create the working directory at '/data' and give user use permissions
+RUN mkdir -p /data && chown -R lotus:lotus /data
+
+# 3. Set the working directory
+WORKDIR /data
+RUN ln -sf /bin/bash /bin/sh
+RUN sed -i 's/archive.ubuntu.com/mirrors.ustc.edu.cn/g' /etc/apt/sources.list
+
+# 4. Install the deps
+RUN apt-get update && \
+    apt-get install -y software-properties-common && \
+    apt-get update && \
+    add-apt-repository -y ppa:longsleep/golang-backports && \
+    apt-get update && \
+    apt-get install -y mesa-opencl-icd ocl-icd-opencl-dev curl \
+      golang-go gcc git bzr jq pkg-config mesa-opencl-icd ocl-icd-opencl-dev && \
+    apt-get install -y vim wget proxychains
+
+# 5. More deps
+#RUN sed -i 's/^socks.*/socks5  127.0.0.1  1080/g' /etc/proxychains.conf
+#RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | proxychains sh -s -- -y
+RUN curl --proto =https --tlsv1.2 --silent --show-error --fail --location https://mirrors.ustc.edu.cn/rust-static/rustup/dist/x86_64-unknown-linux-gnu/rustup-init --output /tmp/rustup-init
+
+RUN export RUSTUP_DIST_SERVER=https://mirrors.ustc.edu.cn/rust-static && \
+    export RUSTUP_UPDATE_ROOT=https://mirrors.ustc.edu.cn/rust-static/rustup && \
+    chmod +x /tmp/rustup-init && /tmp/rustup-init -y
+
+# 6. Copy the app
+COPY --chown=lotus:lotus . .
+
+# 7. Build
+RUN source $HOME/.cargo/env && make clean && make all && make install
+
