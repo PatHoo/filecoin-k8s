@@ -2,7 +2,7 @@
 Deploy Lotus via K8S platform. It's not product ready, just Develop environment.
 
 # SealOS
-[SealOS](https://github.com/fanux/sealos) is a K8S deploy tool. See [official site](https://sealyun.com).
+[SealOS](https://github.com/fanux/sealos) is a K8S deploy tool. See [official site](https://sealyun.com) for more details.
 
 ## Build a production kubernetes HA cluster.
 - A pure Golang project which is in rapid development.
