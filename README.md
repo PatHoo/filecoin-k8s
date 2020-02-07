@@ -1,5 +1,5 @@
 # filecoin-k8s
-Deply Lotus via K8S platform. It's not product ready, just Develop environment.
+Deploy Lotus via K8S platform. It's not product ready, just Develop environment.
 
 # SealOS
 [SealOS](https://github.com/fanux/sealos) is a K8S deploy tool. See [official site](https://sealyun.com).
