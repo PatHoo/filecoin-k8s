@@ -4,7 +4,7 @@ Deply Lotus via K8S platform. It's not product ready, just Develop environment.
 # SealOS
 [SealOS](https://github.com/fanux/sealos) is a K8S deply tool. See [official site](https://sealyun.com).
 ```
-wget https://github.com/fanux/sealos/releases/download/v3.1.0-alpha.4/sealos && \
+wget https://github.com/fanux/sealos/releases/download/v3.1.0/sealos && \
     chmod +x sealos && mv sealos /usr/bin
 ```
 ```
