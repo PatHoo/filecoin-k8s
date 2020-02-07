@@ -20,7 +20,7 @@ spec:
         hostPath:
           path: /var/tmp/filecoin-proof-parameters
       containers:
-      - name: filecoin
+      - name: lotus
         image: 116.31.96.131/library/filecoin:latest
         imagePullPolicy: Always
         command: ["lotus"]
