@@ -23,17 +23,18 @@ mkdir -p /home/file/go-fil/{tmp,lotus,lotusstorage}
 cd ../filecoin-k8s/YAML
 kubectl apply -f filecoin.yaml
 
-watch du -sh /home/file/go-fil/lotus/datastore/*.vlog
+du -sh /home/file/go-fil/lotus/datastore/*.vlog
+du -sh /home/file/go-fil/lotusstorage/datastore/*.vlog
 
 kubectl get pod -o wide -w|grep filecoin
 kubectl get pod -o wide|grep filecoin|awk '{printf "%-20s%s\n",$1,$7}'
 
-kubectl attach pod POD_NAME -c lotus-storage-miner
-kubectl exec -it POD_NAME -c lotus-storage-miner -- /bin/bash
-kubectl exec -it POD_NAME -c lotus-storage-miner -- watch lotus sync status
+kubectl attach pod POD-NAME -c lotus-storage-miner
+kubectl exec -it POD-NAME -c lotus-storage-miner -- /bin/bash
+kubectl exec -it POD-NAME -c lotus-storage-miner -- watch lotus sync status
 
-#kubectl delete pod POD_NAME --grace-period=0 --force
-#kubectl get pod POD_NAME -o yaml | kubectl replace --force -f -
+#kubectl delete pod POD-NAME --grace-period=0 --force
+#kubectl get pod POD-NAME -o yaml | kubectl replace --force -f -
 
 for pod in $(kubectl get pod -o wide|grep filecoin|awk '{print $1}')
 do
@@ -48,6 +49,4 @@ do
   kubectl exec -it $pod -c lotus-storage-miner -- lotus sync status|grep -A 6 0:|grep -E "Stage:|Height:"
   echo "======================================================================"
 done
-
 ```
-
