@@ -46,7 +46,7 @@ spec:
       - name: lotus-storage-miner
         image: 116.31.96.131/library/filecoin:latest
         imagePullPolicy: Always
-        command: ["sh", "-c", "trap : TERM INT; (while true; do sleep 30; if lotus net peers|wc -l >0; then lotus sync wait; fi; done) & wait"]
+        command: ["sh", "-c", "trap : TERM INT; (while true; do sleep 30; if lotus net peers|wc -l >0; then lotus sync wait && lotus-storage-miner run; fi; done) & wait"]
         env:
           - name: LOTUS_PATH
             value: /home/file/go-fil/lotus
