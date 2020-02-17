@@ -1,0 +1,50 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lotus
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: lotus
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      name: lotus-app
+      labels:
+        app: lotus
+    spec:
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: lotus-miner-pvc
+      - name: paramcache
+        persistentVolumeClaim:
+          claimName: lotus-param-pvc
+      containers:
+      - name: lotus-seal-worker
+        image: harbor.vimmer.top/library/lotus:uat
+        imagePullPolicy: Always
+        command: ["sh", "-c", "trap : TERM INT; (while true; do sleep 30; if lotus net peers|wc -l >0; then lotus-seal-worker run; fi; done) & wait"]
+        env:
+          - name: LOTUS_PATH
+            value: /home/file/final/lotus
+          - name: WORKER_PATH
+            value: /home/file/final/lotusworker
+          - name: LOTUS_STORAGE_PATH
+            value: /home/file/final/lotusstorage
+          - name: FULLNODE_LISTEN_ADDR
+            value: /ip4/0.0.0.0/tcp/1234/http
+          - name: IPFS_GATEWAY
+            value: https://proof-parameters.s3.cn-south-1.jdcloud-oss.com/ipfs/
+          - name: TMPDIR
+            value: /home/file/final/tmp  
+          - name: FIL_PROOFS_PARAMETER_CACHE
+            value: /var/tmp/filecoin-proof-parameters  
+        volumeMounts:
+        - name: data
+          mountPath: /home/file/final
+        - name: paramcache
+          mountPath: /var/tmp/filecoin-proof-parameters
+

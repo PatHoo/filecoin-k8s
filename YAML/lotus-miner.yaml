@@ -1,35 +1,37 @@
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: filecoin
+  name: lotus
 spec:
   selector:
     matchLabels:
-      app: filecoin
+      app: lotus
   template:
     metadata:
-      name: filecoin-app
+      name: lotus-app
       labels:
-        app: filecoin
+        app: lotus
     spec:
       nodeSelector:
         app: miner
       volumes:
       - name: data
-        hostPath:
-          path: /home/file/go-fil
+        persistentVolumeClaim:
+          claimName: lotus-miner-pvc
+          readOnly: false
       - name: paramcache
-        hostPath:
-          path: /var/tmp/filecoin-proof-parameters
+        persistentVolumeClaim:
+          claimName: lotus-param-pvc
+          readOnly: false
       containers:
       - name: lotus
-        image: 116.31.96.131/library/filecoin:latest
+        image: harbor.vimmer.top/library/lotus:uat
         imagePullPolicy: Always
         command: ["lotus"]
         args: ["daemon"]
         env:
           - name: LOTUS_PATH
-            value: /home/file/go-fil/lotus
+            value: /home/file/final/lotus
           - name: FULLNODE_LISTEN_ADDR
             value: /ip4/0.0.0.0/tcp/1234/http
           - name: PROXY_FETCHER_ADDR
@@ -37,34 +39,34 @@ spec:
           - name: IPFS_GATEWAY
             value: https://proof-parameters.s3.cn-south-1.jdcloud-oss.com/ipfs/  
           - name: TMPDIR
-            value: /home/file/go-fil/tmp 
+            value: /home/file/final/tmp 
           - name: FIL_PROOFS_PARAMETER_CACHE
             value: /var/tmp/filecoin-proof-parameters  
         volumeMounts:
           - name: data
-            mountPath: /home/file/go-fil
+            mountPath: /home/file/final
           - name: paramcache
             mountPath: /var/tmp/filecoin-proof-parameters
       - name: lotus-storage-miner
-        image: 116.31.96.131/library/filecoin:latest
+        image: harbor.vimmer.top/library/lotus:uat
         imagePullPolicy: Always
         command: ["sh", "-c", "trap : TERM INT; (while true; do sleep 30; if lotus net peers|wc -l >0; then lotus sync wait && lotus-storage-miner run; fi; done) & wait"]
         env:
           - name: LOTUS_PATH
-            value: /home/file/go-fil/lotus
+            value: /home/file/final/lotus
           - name: LOTUS_STORAGE_PATH
-            value: /home/file/go-fil/lotusstorage
+            value: /home/file/final/lotusstorage
           - name: FULLNODE_LISTEN_ADDR
             value: /ip4/0.0.0.0/tcp/1234/http
           - name: IPFS_GATEWAY
             value: https://proof-parameters.s3.cn-south-1.jdcloud-oss.com/ipfs/
           - name: TMPDIR
-            value: /home/file/go-fil/tmp  
+            value: /home/file/final/tmp  
           - name: FIL_PROOFS_PARAMETER_CACHE
             value: /var/tmp/filecoin-proof-parameters  
         volumeMounts:
         - name: data
-          mountPath: /home/file/go-fil
+          mountPath: /home/file/final
         - name: paramcache
           mountPath: /var/tmp/filecoin-proof-parameters
 
