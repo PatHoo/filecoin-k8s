@@ -71,6 +71,7 @@ spec:
           mountPath: /home/file/final
         - name: paramcache
           mountPath: /var/tmp/filecoin-proof-parameters
+
 ---
 #Service
 apiVersion: v1
@@ -85,4 +86,3 @@ spec:
       protocol: TCP
       port: 2345
       targetPort: 2345
-
