@@ -1,0 +1,42 @@
+---
+#DaemonSet
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: lotus-init
+spec:
+  selector:
+    matchLabels:
+      app: lotus-init
+  template:
+    metadata:
+      name: lotus-init
+      labels:
+        app: lotus-init
+    spec:
+      nodeSelector:
+        app: miner
+      volumes:
+      - name: init
+        hostPath:
+          path: /root
+      - name: parameters
+        hostPath:
+          path: /var/tmp/filecoin-proof-parameters
+      - name: data
+        persistentVolumeClaim:
+          claimName: lotus-miner-pvc
+          readOnly: false
+      containers:
+      - name: lotus
+        image: harbor.vimmer.top/library/lotus:uat
+        imagePullPolicy: Always
+        command: ["sh", "-c", "trap : TERM INT; (while true; do sleep 3600; done) & wait"]
+        volumeMounts:
+          - name: data
+            mountPath: /home/file/final
+          - name: parameters
+            mountPath: /var/tmp/filecoin-proof-parameters
+          - name: init
+            mountPath: /gendata/
+

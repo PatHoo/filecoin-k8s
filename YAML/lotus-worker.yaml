@@ -1,20 +1,21 @@
+---
+#DaemonSet
 apiVersion: apps/v1
-kind: Deployment
+kind: DaemonSet
 metadata:
-  name: lotus
+  name: lotus-worker
 spec:
-  replicas: 3
   selector:
     matchLabels:
       app: lotus
-  strategy:
-    type: Recreate
   template:
     metadata:
-      name: lotus-app
+      name: lotus-worker
       labels:
         app: lotus
     spec:
+      nodeSelector:
+        app: worker
       volumes:
       - name: data
         persistentVolumeClaim:
@@ -26,7 +27,7 @@ spec:
       - name: lotus-seal-worker
         image: harbor.vimmer.top/library/lotus:uat
         imagePullPolicy: Always
-        command: ["sh", "-c", "trap : TERM INT; (while true; do sleep 30; if lotus net peers|wc -l >0; then lotus-seal-worker run; fi; done) & wait"]
+        command: ["sh", "-c", "trap : TERM INT; (while true; do lotus-seal-worker run; done) & wait"]
         env:
           - name: LOTUS_PATH
             value: /home/file/final/lotus
@@ -42,6 +43,8 @@ spec:
             value: /home/file/final/tmp  
           - name: FIL_PROOFS_PARAMETER_CACHE
             value: /var/tmp/filecoin-proof-parameters  
+          - name: STORAGE_API_INFO
+            value: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBbGxvdyI6WyJyZWFkIiwid3JpdGUiLCJzaWduIiwiYWRtaW4iXX0.EwJXsHvYMw-z1kT3ROfjtgMAKl1Upc_MQ6znNeXsH_0:/ip4/miner-svc/tcp/2345/http"
         volumeMounts:
         - name: data
           mountPath: /home/file/final

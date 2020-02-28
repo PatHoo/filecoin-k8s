@@ -1,14 +1,16 @@
+---
+#DaemonSet
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
-  name: lotus
+  name: lotus-miner
 spec:
   selector:
     matchLabels:
       app: lotus
   template:
     metadata:
-      name: lotus-app
+      name: lotus-miner
       labels:
         app: lotus
     spec:
@@ -28,7 +30,7 @@ spec:
         image: harbor.vimmer.top/library/lotus:uat
         imagePullPolicy: Always
         command: ["lotus"]
-        args: ["daemon"]
+        args: ["daemon", "--bootstrap=false"]
         env:
           - name: LOTUS_PATH
             value: /home/file/final/lotus
@@ -50,7 +52,7 @@ spec:
       - name: lotus-storage-miner
         image: harbor.vimmer.top/library/lotus:uat
         imagePullPolicy: Always
-        command: ["sh", "-c", "trap : TERM INT; (while true; do sleep 30; if lotus net peers|wc -l >0; then lotus sync wait && lotus-storage-miner run; fi; done) & wait"]
+        command: ["sh", "-c", "trap : TERM INT; (while true; do lotus-storage-miner run --nosync; done) & wait"]
         env:
           - name: LOTUS_PATH
             value: /home/file/final/lotus
@@ -69,4 +71,18 @@ spec:
           mountPath: /home/file/final
         - name: paramcache
           mountPath: /var/tmp/filecoin-proof-parameters
+---
+#Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: miner-svc
+spec:
+  selector:
+    app: lotus-miner
+  ports:
+    - name: lotus-storage-miner
+      protocol: TCP
+      port: 2345
+      targetPort: 2345
 
